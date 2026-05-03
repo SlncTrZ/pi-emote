@@ -1,0 +1,9 @@
+{
+  "name": "pi-emote",
+  "version": "0.1.0",
+  "description": "CGx's pi-emote — Animated pixel-art emote widget for pi TUI",
+  "author": "CGx <31814150+cgxeiji@users.noreply.github.com>",
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  }
+}
