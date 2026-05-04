@@ -10,5 +10,6 @@
   },
   "blinkInterval": [3000, 6000],
   "talkTickMs": 120,
-  "cycleMs": 500
+  "cycleMs": 500,
+  "position": "bottom-right"
 }

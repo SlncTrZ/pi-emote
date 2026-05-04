@@ -17,6 +17,7 @@ interface Config {
   blinkInterval: [number, number];
   talkTickMs: number;
   cycleMs: number;
+  position: "top-right" | "top-left" | "bottom-right" | "bottom-left";
 }
 
 interface EmotesConfig {
@@ -46,6 +47,7 @@ function loadConfig(extDir: string): Config {
     blinkInterval: [3000, 6000],
     talkTickMs: 120,
     cycleMs: 500,
+    position: "bottom-right",
   };
 }
 
@@ -496,11 +498,13 @@ export default function (pi: ExtensionAPI) {
       {
         overlay: true,
         overlayOptions: {
-          anchor: "top-right",
+          anchor: config.position,
           width: config.size,
           maxHeight: config.size,
           nonCapturing: true,
-          margin: { top: 1, right: 0, bottom: 0, left: 0 },
+          margin: config.position.startsWith("top")
+            ? { top: 1, right: 0, bottom: 0, left: 0 }
+            : { top: 0, right: 0, bottom: 3, left: 0 },
           visible: (termWidth) => termWidth >= config.hideBelow,
         },
         onHandle: (handle) => {
