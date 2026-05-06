@@ -2,6 +2,8 @@
 
 Animated pixel-art emote that lives in the top-right corner of your pi TUI session. Reacts to what the agent is doing — thinking, talking, reading, writing, using tools, etc.
 
+![pi-emote demo](pi-emote-demo.gif)
+
 Requires a Kitty-graphics-capable terminal.
 
 ## Install
