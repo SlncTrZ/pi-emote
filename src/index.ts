@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { type OverlayHandle, type TUI, getCapabilities, getImageDimensions, renderImage, allocateImageId, deleteKittyImage } from "@mariozechner/pi-tui";
+import { type TUI, getCapabilities, getImageDimensions, renderImage, allocateImageId, deleteKittyImage } from "@mariozechner/pi-tui";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +17,6 @@ interface Config {
   blinkInterval: [number, number];
   talkTickMs: number;
   cycleMs: number;
-  position: "top-right" | "top-left" | "bottom-right" | "bottom-left";
 }
 
 interface EmotesConfig {
@@ -47,7 +46,6 @@ function loadConfig(extDir: string): Config {
     blinkInterval: [3000, 6000],
     talkTickMs: 120,
     cycleMs: 500,
-    position: "bottom-right",
   };
 }
 
@@ -115,8 +113,8 @@ export default function (pi: ExtensionAPI) {
 
   // Rendering state
   let tuiRef: TUI | null = null;
-  let overlayHandle: OverlayHandle | null = null;
-  let currentLines: string[] = [];
+  let widgetActive = false;
+  let imageRows = 0;
   let pendingTransmit: string | null = null;
   let replotSequence: string | null = null;
   let lastShownBase64: string | null = null;
@@ -174,17 +172,13 @@ export default function (pi: ExtensionAPI) {
 
       // One-shot: upload new data (emitted once per frame change)
       pendingTransmit = transmitSeq;
-      // Reusable: lightweight re-place at current cursor position (emitted every render)
+      // Reusable: lightweight re-place at current widget position (emitted every render)
       replotSequence = placeSeq;
-
-      currentLines = [];
-      for (let i = 0; i < result.rows; i++) {
-        currentLines.push("");
-      }
+      imageRows = result.rows;
     } else {
       pendingTransmit = null;
       replotSequence = null;
-      currentLines = [];
+      imageRows = 0;
     }
     tuiRef?.requestRender();
   }
@@ -254,7 +248,7 @@ export default function (pi: ExtensionAPI) {
   // --- State transitions ---
 
   function transitionTo(state: EmoteState) {
-    if (!overlayHandle) return;
+    if (!widgetActive) return;
     clearStateTimers();
     if (currentState === "idle" && blinkTimer) {
       clearTimeout(blinkTimer);
@@ -485,66 +479,56 @@ export default function (pi: ExtensionAPI) {
     const caps = getCapabilities();
     if (!caps.images) return;
 
-    // Clean up previous overlay if reloading
-    if (overlayHandle) {
-      overlayHandle.hide();
-      overlayHandle = null;
-    }
     clearAllTimers();
 
-    // Create persistent non-capturing overlay (fire-and-forget, never resolves)
-    ctx.ui.custom<never>(
-      (tui, _theme, _kb, _done) => {
-        tuiRef = tui;
-        return {
-          render(_width: number): string[] {
-            if (currentLines.length === 0) return currentLines;
-            const lines = [...currentLines];
-            if (pendingTransmit) {
-              // Frame changed: delete old + upload new + place
-              lines[0] = pendingTransmit + (replotSequence ?? "");
-              pendingTransmit = null;
-            } else if (replotSequence) {
-              // No frame change: lightweight re-place at current overlay position
-              lines[0] = replotSequence;
-            }
-            return lines;
-          },
-          invalidate() {},
-        };
-      },
-      {
-        overlay: true,
-        overlayOptions: {
-          anchor: config.position,
-          width: config.size,
-          maxHeight: config.size,
-          nonCapturing: true,
-          margin: config.position.startsWith("top")
-            ? { top: 1, right: 0, bottom: 0, left: 0 }
-            : { top: 0, right: 0, bottom: 3, left: 0 },
-          visible: (termWidth) => termWidth >= config.hideBelow,
-        },
-        onHandle: (handle) => {
-          overlayHandle = handle;
-        },
-      },
-    );
+    // Create widget above the editor (JRPG-style portrait above dialogue)
+    ctx.ui.setWidget("emote", (tui, _theme) => {
+      tuiRef = tui;
+      return {
+        render(width: number): string[] {
+          // Hide when terminal is too narrow
+          if (width < config.hideBelow) return [];
+          if (imageRows === 0) return [];
 
-    // Let overlay initialize, then show hi
+          const lines: string[] = [];
+          if (pendingTransmit) {
+            // Frame changed: upload new data + place
+            lines.push(pendingTransmit + (replotSequence ?? ""));
+            pendingTransmit = null;
+          } else if (replotSequence) {
+            // No frame change: lightweight re-place at current position
+            lines.push(replotSequence);
+          } else {
+            lines.push("");
+          }
+          // Pad remaining rows so TUI reserves space for the image
+          for (let i = 1; i < imageRows; i++) {
+            lines.push("");
+          }
+          return lines;
+        },
+        invalidate() {},
+        dispose() {
+          tuiRef = null;
+        },
+      };
+    }, { placement: "aboveEditor" });
+
+    widgetActive = true;
+
+    // Let widget initialize, then show hi
     setTimeout(() => transitionTo("hi"), 500);
   });
 
-  pi.on("session_shutdown", async () => {
+  pi.on("session_shutdown", async (_event, ctx) => {
     clearAllTimers();
     // Clean up Kitty image data from terminal
     process.stdout.write(deleteKittyImage(emoteImageId));
-    if (overlayHandle) {
-      overlayHandle.hide();
-      overlayHandle = null;
+    if (widgetActive && ctx.hasUI) {
+      ctx.ui.setWidget("emote", undefined);
+      widgetActive = false;
     }
     tuiRef = null;
-    currentLines = [];
     pendingTransmit = null;
     replotSequence = null;
   });
@@ -555,7 +539,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("message_update", async (event) => {
-    if (!overlayHandle) return;
+    if (!widgetActive) return;
     if (event.message?.role !== "assistant") return;
 
     // Extract text delta from streaming event
@@ -594,7 +578,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("agent_end", async () => {
-    if (!overlayHandle) return;
+    if (!widgetActive) return;
     if (currentState === "talk") {
       endTalk();
     } else if (currentState !== "idle" && currentState !== "hi" && currentState !== "compact") {
@@ -603,13 +587,13 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("tool_execution_start", async (event) => {
-    if (!overlayHandle) return;
+    if (!widgetActive) return;
     const state = toolNameToState(event.toolName);
     transitionTo(state);
   });
 
   pi.on("tool_execution_end", async (event) => {
-    if (!overlayHandle) return;
+    if (!widgetActive) return;
     if (event.toolName === "bash" && event.isError) {
       // Show failure briefly, then transition to reading the output
       holdNextState = "read";
@@ -621,12 +605,12 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_before_compact", async () => {
-    if (!overlayHandle) return;
+    if (!widgetActive) return;
     transitionTo("compact");
   });
 
   pi.on("session_compact", async () => {
-    if (!overlayHandle) return;
+    if (!widgetActive) return;
     transitionTo("idle");
   });
 }
