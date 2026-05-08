@@ -2,7 +2,7 @@
 
 All notable changes to pi-emote will be documented in this file.
 
-## [0.2.1] - 2026-05-08 (unreleased)
+## v0.2.1
 
 ### Added
 - **ASCII fallback renderer** — terminals without image support (tmux, Alacritty, VSCode, etc.) now show text-based emotes instead of nothing.
@@ -18,15 +18,19 @@ All notable changes to pi-emote will be documented in this file.
   - `render_image.ts` — shared base class for image renderers.
   - `renderer.ts` — `Renderer` interface and `RenderedFrame` type.
 - `animator.ts` is now a pure state machine, delegates all rendering to the `Renderer` interface.
-- `widget.ts` handles both image and text frame rendering.
+- `widget.ts` handles image, text, and protocol-specific frame rendering.
 
 ### Fixed
 - Package imports updated from `@mariozechner/*` to `@earendil-works/*`.
-- iTerm2 inline image rendering: text-first/image-last approach prevents ghost images
-  and `\x1b[2K]` erasure artifacts. Correct aspect ratio via `preserveAspectRatio`.
+- **iTerm2 inline image rendering** — text-first/image-last strategy prevents ghost
+  images and `\x1b[2K` erasure artifacts. Uses `preserveAspectRatio` with auto height
+  for correct proportions.
+- **Kitty image aspect ratio** — no longer forces row count, letting Kitty auto-size
+  height to preserve correct proportions.
+- Image width increased by 1 cell for better visual sizing in both protocols.
 - I/O token stats (`↑input ↓output`) now shown even when zero.
 
-## [0.2.0] - 2026-05-07
+## v0.2.0
 
 Initial alpha release.
 

@@ -15,10 +15,9 @@ export class KittyRenderer extends BaseImageRenderer {
     this.imageId = allocateImageId();
   }
 
-  protected encode(base64: string, _dims: ImageDims, rows: number): string | null {
+  protected encode(base64: string, _dims: ImageDims, _rows: number): string | null {
     return encodeKitty(base64, {
-      columns: this.size,
-      rows,
+      columns: this.size + 1,
       imageId: this.imageId,
       moveCursor: false,
     });
