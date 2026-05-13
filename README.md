@@ -8,6 +8,17 @@ Animated pixel-art emote that lives in the top-right corner of your pi TUI sessi
 
 Supports Kitty, iTerm2, and ASCII rendering.
 
+## Gallery
+
+Community-contributed emote sets. [Submit yours via PR!](#custom-emotes)
+
+| Avatar | Name | Contributor |
+|--------|------|-------------|
+| <img src="emotes/default/hi/hi1.png" width="64"> | `default` | [@cgxeiji](https://github.com/cgxeiji) |
+| `(^ ◡ ^)/` | `ascii` | [@cgxeiji](https://github.com/cgxeiji) |
+| <img src="emotes/aza_choi/hi/hi_1.png" width="64"> | `aza_choi` | [@shennguyenrs](https://github.com/shennguyenrs) |
+| <img src="emotes/aza_choi_nobg/hi/hi_1.png" width="64"> | `aza_choi_nobg` | [@shennguyenrs](https://github.com/shennguyenrs) |
+
 ## Install
 
 ```bash
