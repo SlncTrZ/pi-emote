@@ -6,7 +6,7 @@ Animated pixel-art emote that lives in the top-right corner of your pi TUI sessi
 
 ![pi-emote demo](pi-emote-demo.gif)
 
-Requires a Kitty-graphics-capable terminal.
+Supports Kitty, iTerm2, and ASCII rendering.
 
 ## Install
 
@@ -42,13 +42,26 @@ Only include what you want to change:
 {
   "size": 12,
   "emotes": [
-    { "model": "*", "emote-set": "default" },
     { "model": "*claude*", "emote-set": "my-avatar" }
   ]
 }
 ```
 
-See `config.json` in the extension root for all the fields (or ask your agent).
+See `config.json` in the extension root for all defaults.
+
+### Terminal renderer overrides
+
+Image protocol auto-detection doesn't always get it right (especially in multiplexers). Override per terminal:
+
+```json
+{
+  "terminals": [
+    { "match": "tmux", "render": "kitty" }
+  ]
+}
+```
+
+Render values: `"kitty"`, `"iterm2"`, `"ascii"`. Only include terminals you want to override — the rest keep their defaults. See `AGENTS.md` for the full list of detected terminal names.
 
 ## Custom Emotes
 

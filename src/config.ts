@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { Config } from "./types.js";
+import type { Config, EmoteMapping, TerminalMapping } from "./types.js";
 
 function deepMerge(target: any, source: any): any {
   const result = { ...target };
@@ -50,6 +50,35 @@ const DEFAULTS: Config = {
   ],
 };
 
+/**
+ * Append emote arrays in priority order.
+ * Since emotes uses "last match wins", lower-priority layers come first.
+ * Skips undefined/empty layers — they don't participate.
+ */
+function mergeEmotes(...layers: (EmoteMapping[] | undefined)[]): EmoteMapping[] {
+  const result: EmoteMapping[] = [];
+  for (const layer of layers) {
+    if (layer?.length) result.push(...layer);
+  }
+  return result.length > 0 ? result : DEFAULTS.emotes;
+}
+
+/**
+ * Merge terminal arrays by `match` key.
+ * Higher-priority layers replace entries with the same match key,
+ * or append new ones. Preserves ordering from lower layers.
+ */
+function mergeTerminals(...layers: (TerminalMapping[] | undefined)[]): TerminalMapping[] {
+  const result = new Map<string, TerminalMapping>();
+  for (const layer of layers) {
+    if (!layer?.length) continue;
+    for (const entry of layer) {
+      result.set(entry.match, entry);
+    }
+  }
+  return result.size > 0 ? [...result.values()] : DEFAULTS.terminals;
+}
+
 export function loadLayeredConfig(extDir: string, cwd: string): Config {
   // Layer 1: Extension config (lowest priority)
   const extConfig = loadJsonFile(join(extDir, "config.json"));
@@ -67,16 +96,21 @@ export function loadLayeredConfig(extDir: string, cwd: string): Config {
   if (userConfig) merged = deepMerge(merged, userConfig);
   if (projectConfig) merged = deepMerge(merged, projectConfig);
 
-  // "emotes" and "terminals" arrays use replace semantics — highest priority layer wins
-  for (const key of ["emotes", "terminals"] as const) {
-    if (projectConfig?.[key]) {
-      merged[key] = projectConfig[key];
-    } else if (userConfig?.[key]) {
-      merged[key] = userConfig[key];
-    } else if (extConfig?.[key]) {
-      merged[key] = extConfig[key];
-    }
-  }
+  // "emotes" — append arrays in priority order (last match wins)
+  merged.emotes = mergeEmotes(
+    DEFAULTS.emotes,
+    extConfig?.emotes,
+    userConfig?.emotes,
+    projectConfig?.emotes,
+  );
+
+  // "terminals" — merge by match key, higher priority replaces (first match wins)
+  merged.terminals = mergeTerminals(
+    DEFAULTS.terminals,
+    extConfig?.terminals,
+    userConfig?.terminals,
+    projectConfig?.terminals,
+  );
 
   return merged;
 }

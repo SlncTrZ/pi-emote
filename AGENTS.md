@@ -91,7 +91,7 @@ The `emotes` array maps model IDs to emote sets using glob patterns:
 - Matching is case-insensitive against the model `id` (e.g. `claude-opus-4.6`).
 - **Last match wins** — order matters.
 - If multiple non-catch-all patterns match, a warning is logged.
-- The `emotes` array uses **replace** semantics: the highest-priority config layer that defines it wins entirely (no merging across layers).
+- The `emotes` array uses **append** semantics: entries from all config layers are concatenated (extension → user → project). Since last match wins, higher-priority layers naturally override lower ones. An empty array `[]` is treated as "not set" and skipped.
 
 ## Terminal Renderer Overrides
 
@@ -148,16 +148,12 @@ If you have Kitty image passthrough working in tmux:
 ```json
 {
   "terminals": [
-    { "match": "tmux", "render": "kitty" },
-    { "match": "zellij", "render": "ascii" },
-    { "match": "screen", "render": "ascii" },
-    { "match": "wezterm", "render": "iterm2" },
-    { "match": "ghostty", "render": "kitty" }
+    { "match": "tmux", "render": "kitty" }
   ]
 }
 ```
 
-The `terminals` array uses **replace** semantics (same as `emotes`): include the full list when overriding.
+The `terminals` array uses **merge-by-key** semantics: entries are merged by `match` key across all config layers (extension → user → project). Higher-priority layers replace entries with the same key, or append new ones. You only need to include the entries you want to override or add.
 
 ### Emote Set Lookup
 
