@@ -2,6 +2,21 @@
 
 All notable changes to pi-emote will be documented in this file.
 
+## v0.2.6
+
+### Added
+- **TmuxKittyUnicodeRenderer** — pane-safe image rendering through tmux using kitty Unicode placeholders (U+10EEEE). Images stay within their pane and clean up on session switch.
+- **`"kitty-unicode"` render value** — new option for terminals config. Auto-selected for Ghostty/kitty through tmux.
+- **`"placeholder"` frame kind** — new RenderedFrame variant for text-based image display.
+
+### Changed
+- **tmux auto-detection** — `"auto"` now resolves to `kitty-unicode` for Ghostty/kitty (pane-safe), ASCII for iTerm2/WezTerm (no pane-safe renderer available).
+- **All tmux rendering is experimental and opt-in** — default remains ASCII. Users opt in via `{ "match": "tmux", "render": "auto" }` in their config.
+- Classic `"kitty"` and `"iterm2"` DCS passthrough renderers remain available for single-pane setups.
+
+### Fixed
+- **Multiplexer routing bug** — concrete render values (e.g., `"ascii"`) from extension defaults were being ignored, falling through to auto-detection.
+
 ## v0.2.5
 
 ### Changed
