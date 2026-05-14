@@ -1,6 +1,6 @@
 {
   "name": "pi-emote",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Animated pixel-art emote widget for pi TUI",
   "author": "CGx <31814150+cgxeiji@users.noreply.github.com>",
   "license": "MIT",
