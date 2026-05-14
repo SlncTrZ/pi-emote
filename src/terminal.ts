@@ -74,13 +74,14 @@ function resolveMultiplexer(
   const render = entry?.render ?? "auto";
   const isUserConfigured = userConfiguredTerminals.has(name);
 
-  // User explicitly picked a concrete renderer — trust them
-  if (isUserConfigured && render !== "auto") {
-    log(`terminal: user configured "${name}" → "${render}"`);
+  // Concrete renderer specified (not "auto") — use it directly.
+  // Only suppress warnings if it was explicitly set by user/project config.
+  if (render !== "auto") {
+    log(`terminal: "${name}" → "${render}"${isUserConfigured ? " (user configured)" : " (default)"}`);
     return { ...base, protocol: render, warning: null };
   }
 
-  // Auto-detection path (default or explicit "auto")
+  // Auto-detection path (explicit "auto" from user, or default "auto")
   if (name === "tmux") {
     return resolveTmux(base);
   }

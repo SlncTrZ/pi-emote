@@ -2,6 +2,28 @@
 
 All notable changes to pi-emote will be documented in this file.
 
+## v0.2.5
+
+### Changed
+- **Multiplexer defaults reverted to ASCII** — tmux/zellij/screen default to `"ascii"` pending renderer fix. Users can opt in to image rendering with `{ "match": "tmux", "render": "auto" }` in their config.
+
+## v0.2.4
+
+### Added
+- **tmux passthrough rendering** — image avatars now work through tmux using DCS passthrough. Auto-detects outer terminal via `tmux show-environment TERM_PROGRAM`.
+- **TmuxKittyRenderer** — Kitty protocol through tmux (Ghostty, kitty).
+- **TmuxITermRenderer** — iTerm2 protocol through tmux (iTerm2, WezTerm).
+- **`"auto"` render value** — new option for terminal config entries. Multiplexers use it by default to auto-detect passthrough support and outer terminal.
+- **`src/tmux.ts`** — tmux-specific logic: passthrough check, outer terminal detection, DCS wrapping.
+- **Multiplexers section** in README with tmux setup instructions.
+- **tmux Requirements section** in AGENTS.md with full auto-detection flow.
+
+### Changed
+- `resolveRenderer()` returns a `ResolvedRenderer` object (protocol, multiplexer, warning) instead of a plain string.
+- `loadLayeredConfig()` returns `{ config, userConfiguredTerminals }` to track explicit user overrides.
+- Multiplexer warnings are suppressed when the user explicitly configures a concrete render value.
+- Widget supports `padMode: "skip"` for tmux iTerm2 layout (cursor-right instead of spaces on image row).
+
 ## v0.2.3
 
 ### Added
