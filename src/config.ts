@@ -40,7 +40,7 @@ const DEFAULTS: Config = {
   debug: false,
   size: 8,
   readingSpeed: 4,
-  hideBelow: 80,
+  hideBelow: 40,
   holdDuration: { hi: 2000, success: 1200, failure: 1200 },
   blinkInterval: [3000, 6000],
   talkTickMs: 120,
