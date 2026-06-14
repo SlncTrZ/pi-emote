@@ -25,7 +25,7 @@ export function detectTerminalName(): string {
   if (process.env.KITTY_WINDOW_ID || termProgram === "kitty") return "kitty";
   if (process.env.GHOSTTY_RESOURCES_DIR || termProgram === "ghostty" || term.includes("ghostty")) return "ghostty";
   if (process.env.WEZTERM_PANE || termProgram === "wezterm") return "wezterm";
-  if (process.env.WT_SESSION || termProgram === "windowsterminal") return "windowsterminal";
+  if (process.env.WT_SESSION || termProgram.includes("windows") || termProgram.includes("microsoft")) return "windowsterminal";
   if (process.env.ITERM_SESSION_ID || termProgram === "iterm.app") return "iterm2";
   if (termProgram === "vscode") return "vscode";
   if (termProgram === "alacritty") return "alacritty";
@@ -54,6 +54,7 @@ export function resolveRenderer(
     return resolveMultiplexer(name, terminals, userConfiguredTerminals);
   }
 
+  if (name === "unknown") return resolveDirectOrSixelFallback(name, terminals);
   return resolveDirect(name, terminals);
 }
 
@@ -181,3 +182,33 @@ function detectDirectProtocol(): Protocol {
   const caps = getCapabilities();
   return caps.images ?? "ascii";
 }
+
+/**
+ * Fallback resolver: if terminal name unknown but sixel config exists, use sixel.
+ */
+function resolveDirectOrSixelFallback(name: string, terminals: TerminalMapping[]): ResolvedRenderer {
+  const base: ResolvedRenderer = {
+    protocol: "ascii",
+    multiplexer: null,
+    warning: null,
+    warningLevel: "warning",
+  };
+  const entry = terminals.find((e) => e.match === name);
+  if (entry) {
+    const render = entry.render === "auto" ? detectDirectProtocol() : entry.render;
+    log(`terminal: whitelist match "${name}" → render "${render}"`);
+    return { ...base, protocol: render };
+  }
+  // Check if any terminal entry configures sixel (e.g. windowsterminal mapping exists)
+  const hasSixelEntry = terminals.some(t => t.render === "sixel");
+  if (hasSixelEntry) {
+    log(`terminal: "${name}" unknown, sixel config exists — sixel fallback`);
+    return { ...base, protocol: "sixel" };
+  }
+  const caps = getCapabilities();
+  const fallback: Protocol = caps.images ?? "ascii";
+  log(`terminal: no whitelist match for "${name}", using pi-tui capabilities → "${fallback}"`);
+  return { ...base, protocol: fallback };
+}
+
+export { resolveRenderer, detectTerminalName };
