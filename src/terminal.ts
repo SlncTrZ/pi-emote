@@ -3,7 +3,7 @@ import type { TerminalMapping, ResolvedRenderer } from "./types.js";
 import { checkTmuxPassthrough, detectOuterTerminal } from "./tmux.js";
 import { log } from "./log.js";
 
-type Protocol = "kitty" | "kitty-unicode" | "iterm2" | "ascii";
+type Protocol = "kitty" | "kitty-unicode" | "iterm2" | "ascii" | "sixel";
 
 const MULTIPLEXERS = new Set(["tmux", "screen", "zellij"]);
 
@@ -25,6 +25,7 @@ export function detectTerminalName(): string {
   if (process.env.KITTY_WINDOW_ID || termProgram === "kitty") return "kitty";
   if (process.env.GHOSTTY_RESOURCES_DIR || termProgram === "ghostty" || term.includes("ghostty")) return "ghostty";
   if (process.env.WEZTERM_PANE || termProgram === "wezterm") return "wezterm";
+  if (process.env.WT_SESSION || termProgram === "windowsterminal") return "windowsterminal";
   if (process.env.ITERM_SESSION_ID || termProgram === "iterm.app") return "iterm2";
   if (termProgram === "vscode") return "vscode";
   if (termProgram === "alacritty") return "alacritty";

@@ -14,6 +14,7 @@ import { TmuxKittyUnicodeRenderer } from "./render_tmux_kitty_unicode.js";
 import { ITermRenderer } from "./render_iterm.js";
 import { TmuxITermRenderer } from "./render_tmux_iterm.js";
 import { AsciiRenderer } from "./render_ascii.js";
+import { SixelRenderer } from "./render_sixel.js";
 import { Animator } from "./animator.js";
 import { createWidgetFactory } from "./widget.js";
 import { resolveRenderer } from "./terminal.js";
@@ -62,6 +63,10 @@ function createRendererFromResolved(resolved: ResolvedRenderer, size: number): R
     }
     log(`createRenderer: using ITermRenderer`);
     return new ITermRenderer(size);
+  }
+  if (protocol === "sixel") {
+    log(`createRenderer: using SixelRenderer`);
+    return new SixelRenderer(size);
   }
   log(`createRenderer: using AsciiRenderer`);
   return new AsciiRenderer();
